@@ -201,7 +201,7 @@ fn main() {
     let pos_shock_prim = solve_jump_condition(pre_shock_prim);
     u = pos_shock_prim.u;
 
-    while (r > rmax) & (r < 100.0 * rmax) {
+    while r < 100.0 * rmax {
         let p = Primitive::from_ru_mdot_edot(r, u, mdot, edot);
         let dr = 1e-4 * r;
         r += dr;
