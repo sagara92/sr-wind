@@ -6,8 +6,6 @@
 //! Authors: Sagar Adhikari, Jonathan Zrake
 
 use std::fmt;
-use std::fs::File;
-use std::io::{BufWriter, Write};
 use std::env;
 
 /// The adiabatic index
@@ -15,6 +13,9 @@ const GAMMA_LAW_INDEX: f64 = 4.0 / 3.0;
 
 /// Speed of light in cm / s
 const SPEED_OF_LIGHT: f64 = 2.99e10;
+
+/// Numerical integration step
+const DELTA_LOG_RADIUS: f64 = 1e-4;
 
 /// Public data structure for problem parameters (Data given in the yaml file)
 #[derive(Clone, Copy, Debug)]
@@ -177,6 +178,12 @@ fn wind_inlet() -> Primitive {
     Primitive{r, u, d, h}
 }
 
+fn write_ascii_stdout<T: fmt::Display>(solution: &Vec<T>) {
+    for value in solution {
+        println!("{}", value)
+    }
+}
+
 fn main() {
     let inlet_prim = wind_inlet();
     let mut r = inlet_prim.r;
@@ -185,17 +192,14 @@ fn main() {
     let mdot = inlet_prim.mass_loss_rate();
     let rmax = 1e10; // cm
 
-    let path = "/home/sagar/Documents/steady-state/data/out.dat";
-    let f = File::create(path).expect("unable to create file");
-    let mut f = BufWriter::new(f);
+    let mut solution = Vec::new();
 
     while r < rmax {
-        let dr = 1e-4 * r;
+        let dr = DELTA_LOG_RADIUS * r;
         let p = Primitive::from_ru_mdot_edot(r, u, mdot, edot);
         r += dr;
         u += du_dr(p) * dr;
-        let data = p.to_string();
-        writeln!(f, "{}", data).expect("unable to write file");
+        solution.push(p);
     }
     let pre_shock_prim = Primitive::from_ru_mdot_edot(r, u, mdot, edot);
     let pos_shock_prim = solve_jump_condition(pre_shock_prim);
@@ -203,15 +207,10 @@ fn main() {
 
     while r < 100.0 * rmax {
         let p = Primitive::from_ru_mdot_edot(r, u, mdot, edot);
-        let dr = 1e-4 * r;
+        let dr = DELTA_LOG_RADIUS * r;
         r += dr;
         u += du_dr(p) * dr;
-        let data = p.to_string();
-        writeln!(f, "{}", data).expect("unable to write file");
+        solution.push(p);
     }
-    let final_prim = Primitive::from_ru_mdot_edot(r, u, mdot, edot);
-
-    println!("upstream:      {:?}", pre_shock_prim);
-    println!("downstream:    {:?}", pos_shock_prim);
-    println!("end of stream: {:?}", final_prim);
+    write_ascii_stdout(&solution);
 }
