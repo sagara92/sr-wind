@@ -47,7 +47,7 @@ struct Primitive {
 
 impl fmt::Display for Primitive {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{} {} {} {}", self.r, self.u, self.d, self.h)
+        write!(f, "{:.12e} {:.12e} {:.12e} {:.12e}", self.r, self.u, self.d, self.h)
     }
 }
 
