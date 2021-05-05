@@ -18,6 +18,7 @@
 use std::fmt;
 use std::fs::File;
 use std::io::{BufWriter, Write};
+use std::env;
 
 /// The adiabatic index
 const GAMMA_LAW_INDEX: f64 = 4.0 / 3.0;
@@ -186,9 +187,13 @@ fn solve_jump_condition(primitive: Primitive) -> Primitive {
 //    Primitive{r, u, d, h}
 //}
 fn wind_inlet() -> Primitive {
-    let mdot = 1e20; // g / s / Sr
-    let r = 1e8; // cm
-    let u = 10.0; // gamma-beta (dimensionless)
+    let args: Vec<String> = env::args().collect();
+    let mdot: f64 = args[1].parse().unwrap();
+    let r: f64 = args[2].parse().unwrap();
+    let u: f64 = args[3].parse().unwrap();
+    // let mdot = 1e20; // g / s / Sr
+    // let r = 1e8; // cm
+    // let u = 10.0; // gamma-beta (dimensionless)
     let c = SPEED_OF_LIGHT;
     let d = mdot / r / r / u / c;
     let h = 10.0 * c * c;
