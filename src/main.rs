@@ -7,6 +7,7 @@
 
 use std::fmt;
 use std::env;
+use clap::{AppSettings, Clap};
 
 /// The adiabatic index
 const GAMMA_LAW_INDEX: f64 = 4.0 / 3.0;
@@ -16,6 +17,30 @@ const SPEED_OF_LIGHT: f64 = 2.99e10;
 
 /// Numerical integration step
 const DELTA_LOG_RADIUS: f64 = 1e-4;
+
+#[derive(Clap, Debug)]
+#[clap(version = "0.1.0", author = "S. Adhikari and J. Zrake")]
+#[clap(setting = AppSettings::ColoredHelp)]
+struct Opts {
+
+    #[clap(long, about = "inner boundary (cm)", default_value = "1e8")]
+    pub r_inner: f64,
+
+    #[clap(long, about = "outer boundary (cm)", default_value = "1e11")]
+    pub r_outer: f64,
+
+    #[clap(long, about = "shock position (cm)", default_value = "1e10")]
+    pub r_shock: f64,
+
+    #[clap(short, long, about = "wind kinetic luminosity (erg / s)", default_value = "1e33")]
+    pub luminosity: f64,
+
+    #[clap(short='t', long, about = "wind terminal Lorentz factor", default_value = "100.0")]
+    pub gamma_terminal: f64,
+
+    #[clap(short='i', long, about = "wind injection Lorentz factor", default_value = "10.0")]
+    pub gamma_launch: f64,
+}
 
 /// Public data structure for problem parameters (Data given in the yaml file)
 #[derive(Clone, Copy, Debug)]
@@ -185,6 +210,9 @@ fn write_ascii_stdout<T: fmt::Display>(solution: &Vec<T>) {
 }
 
 fn main() {
+
+    let _opts = Opts::parse();
+
     let inlet_prim = wind_inlet();
     let mut r = inlet_prim.r;
     let mut u = inlet_prim.u;
