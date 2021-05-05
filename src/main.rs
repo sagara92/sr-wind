@@ -4,17 +4,7 @@
 //! subsonic decelerating flow to an outer boundary radius.
 //!
 //! Authors: Sagar Adhikari, Jonathan Zrake
-//!
-//! TODO:
-//!
-//! [ ] Continue integrating the flow past the shock
-//!
-//! [ ] Parameterize the problem parameters: inlet state, shock radius, and
-//!     outer boundary with a public data structure.
-//!
-//! [ ] Modify the main function to receive the problem parameter struct and
-//!     return a tabulated wind solution.
-//use std::fs;
+
 use std::fmt;
 use std::fs::File;
 use std::io::{BufWriter, Write};
@@ -25,7 +15,6 @@ const GAMMA_LAW_INDEX: f64 = 4.0 / 3.0;
 
 /// Speed of light in cm / s
 const SPEED_OF_LIGHT: f64 = 2.99e10;
-
 
 /// Public data structure for problem parameters (Data given in the yaml file)
 #[derive(Clone, Copy, Debug)]
@@ -174,18 +163,6 @@ fn solve_jump_condition(primitive: Primitive) -> Primitive {
     Primitive::from_rufl(primitive.r, u, f, l)
 }
 
-/// Return a fiducial wind inflow condition. The initial gamma-beta is 10 and
-/// the terminal gamma-beta is about 100.
-
-//fn wind_inlet() -> Primitive {
-//    let mdot = Parameters.mdot;
-//    let r = Parameters.r_in;
-//    let u = Parameters.u;
-//    let c = SPEED_OF_LIGHT;
-//    let d = mdot / r / r / u / c;
-//    let h = 10.0 * c * c;
-//    Primitive{r, u, d, h}
-//}
 fn wind_inlet() -> Primitive {
     let args: Vec<String> = env::args().collect();
     let mdot: f64 = args[1].parse().unwrap();
@@ -223,6 +200,7 @@ fn main() {
     let pre_shock_prim = Primitive::from_ru_mdot_edot(r, u, mdot, edot);
     let pos_shock_prim = solve_jump_condition(pre_shock_prim);
     u = pos_shock_prim.u;
+
     while (r > rmax) & (r < 100.0 * rmax) {
         let p = Primitive::from_ru_mdot_edot(r, u, mdot, edot);
         let dr = 1e-4 * r;
