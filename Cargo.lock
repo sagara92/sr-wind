@@ -152,7 +152,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "steady-state"
+name = "sr-wind"
 version = "0.1.0"
 dependencies = [
  "clap",

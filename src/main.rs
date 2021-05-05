@@ -5,8 +5,8 @@
 //!
 //! Authors: Sagar Adhikari, Jonathan Zrake
 
+use std::f64::consts::PI;
 use std::fmt;
-use std::env;
 use clap::{AppSettings, Clap};
 
 /// The adiabatic index
@@ -40,21 +40,6 @@ struct Opts {
 
     #[clap(short='i', long, about = "wind injection Lorentz factor", default_value = "10.0")]
     pub gamma_launch: f64,
-}
-
-/// Public data structure for problem parameters (Data given in the yaml file)
-#[derive(Clone, Copy, Debug)]
-pub struct Parameters {
-    /// Inner boundary (cm)
-    pub r_in: f64,
-    /// Outer boundary (cm)
-    pub r_out: f64,
-    /// Shock Radius (cm)
-    pub r_shock: f64,
-    /// Mass loss rate (g / s / Sr)
-    pub mdot: f64,
-    /// Wind gamma-beta (dimensionless)
-    pub u: f64,
 }
 
 /// Holds the primitive hydrodynamic variables for a spherically symmetric
@@ -190,16 +175,16 @@ fn solve_jump_condition(primitive: Primitive) -> Primitive {
 }
 
 fn wind_inlet() -> Primitive {
-    let args: Vec<String> = env::args().collect();
-    let mdot: f64 = args[1].parse().unwrap();
-    let r: f64 = args[2].parse().unwrap();
-    let u: f64 = args[3].parse().unwrap();
-    // let mdot = 1e20; // g / s / Sr
-    // let r = 1e8; // cm
-    // let u = 10.0; // gamma-beta (dimensionless)
     let c = SPEED_OF_LIGHT;
+    let opts = Opts::parse();
+    let lum: f64 = opts.luminosity / 4.0 / PI;
+    let r: f64 = opts.r_inner;
+    let g: f64 = opts.gamma_launch;
+    let g_term: f64 = opts.gamma_terminal;
+    let u = (g * g - 1.0).sqrt();
+    let h = g_term / g * c * c;
+    let mdot = lum / g / h;
     let d = mdot / r / r / u / c;
-    let h = 10.0 * c * c;
     Primitive{r, u, d, h}
 }
 
@@ -211,18 +196,19 @@ fn write_ascii_stdout<T: fmt::Display>(solution: &Vec<T>) {
 
 fn main() {
 
-    let _opts = Opts::parse();
+    let opts = Opts::parse();
 
     let inlet_prim = wind_inlet();
-    let mut r = inlet_prim.r;
-    let mut u = inlet_prim.u;
+    let mut r = opts.r_inner;
+    let mut u = opts.gamma_launch;
+    let rshock = opts.r_shock;
+    let rmax = opts.r_outer;
     let edot = inlet_prim.luminosity();
     let mdot = inlet_prim.mass_loss_rate();
-    let rmax = 1e10; // cm
 
     let mut solution = Vec::new();
 
-    while r < rmax {
+    while r < rshock {
         let dr = DELTA_LOG_RADIUS * r;
         let p = Primitive::from_ru_mdot_edot(r, u, mdot, edot);
         r += dr;
@@ -233,7 +219,7 @@ fn main() {
     let pos_shock_prim = solve_jump_condition(pre_shock_prim);
     u = pos_shock_prim.u;
 
-    while r < 100.0 * rmax {
+    while r < rmax {
         let p = Primitive::from_ru_mdot_edot(r, u, mdot, edot);
         let dr = DELTA_LOG_RADIUS * r;
         r += dr;
