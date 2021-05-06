@@ -1,3 +1,5 @@
+#![allow(clippy::many_single_char_names)]
+#![allow(clippy::suspicious_operation_groupings)]
 //! This module solves for a time-steady hydrodynamic wind profile, including
 //! a free-expansion zone initiated at a supersonic inlet, a stationary shock
 //! wave (standing reverse shock) at a specified radius, and subsequent
@@ -5,9 +7,9 @@
 //!
 //! Authors: Sagar Adhikari, Jonathan Zrake
 
+use clap::{AppSettings, Clap};
 use std::f64::consts::PI;
 use std::fmt;
-use clap::{AppSettings, Clap};
 
 /// The adiabatic index
 const GAMMA_LAW_INDEX: f64 = 4.0 / 3.0;
@@ -22,7 +24,6 @@ const DELTA_LOG_RADIUS: f64 = 1e-4;
 #[clap(version = "0.1.0", author = "S. Adhikari and J. Zrake")]
 #[clap(setting = AppSettings::ColoredHelp)]
 struct Opts {
-
     #[clap(long, about = "inner boundary (cm)", default_value = "1e8")]
     pub r_inner: f64,
 
@@ -32,13 +33,28 @@ struct Opts {
     #[clap(long, about = "shock position (cm)", default_value = "1e10")]
     pub r_shock: f64,
 
-    #[clap(short, long, about = "wind kinetic luminosity (erg / s)", default_value = "1e33")]
+    #[clap(
+        short,
+        long,
+        about = "wind kinetic luminosity (erg / s)",
+        default_value = "1e33"
+    )]
     pub luminosity: f64,
 
-    #[clap(short='t', long, about = "wind terminal Lorentz factor", default_value = "100.0")]
+    #[clap(
+        short = 't',
+        long,
+        about = "wind terminal Lorentz factor",
+        default_value = "100.0"
+    )]
     pub gamma_terminal: f64,
 
-    #[clap(short='i', long, about = "wind injection Lorentz factor", default_value = "10.0")]
+    #[clap(
+        short = 'i',
+        long,
+        about = "wind injection Lorentz factor",
+        default_value = "10.0"
+    )]
     pub gamma_launch: f64,
 }
 
@@ -58,29 +74,34 @@ struct Primitive {
 
 impl fmt::Display for Primitive {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:.12e} {:.12e} {:.12e} {:.12e}", self.r, self.u, self.d, self.h)
+        write!(
+            f,
+            "{:.12e} {:.12e} {:.12e} {:.12e}",
+            self.r, self.u, self.d, self.h
+        )
     }
 }
 
 impl Primitive {
-
     /// Create hydrodynamic variables given the radius r (cm), gamma-beta u,
     /// mass flux (over c; g) f = rho u, and specific energy flux (over c;
     /// cm^2 / s^2), l.
+    #[allow(clippy::many_single_char_names)]
     fn from_rufl(r: f64, u: f64, f: f64, l: f64) -> Self {
         let d = f / u;
         let h = l / (1.0 + u * u).sqrt();
-        Self {r, u, d, h}
+        Self { r, u, d, h }
     }
 
     /// Create hydrodynamic variables given the radius r (cm), gamma-beta u,
     /// mass loss rate per steradian mdot (g / s / Sr), and wind luminosity
     /// per steradian edot (erg / s / Sr).
+    #[allow(clippy::many_single_char_names)]
     fn from_ru_mdot_edot(r: f64, u: f64, mdot: f64, edot: f64) -> Self {
         let c = SPEED_OF_LIGHT;
         let d = mdot / r / r / u / c;
         let h = edot / mdot / (1.0 + u * u).sqrt();
-        Self {r, u, d, h}
+        Self { r, u, d, h }
     }
 
     /// Return the wind luminosity per steradian (erg / s / Sr).
@@ -121,7 +142,7 @@ impl Primitive {
 /// Return the spatial derivative du/dr for an energy and momentum-conserving
 /// steady-state wind.
 fn du_dr(primitive: Primitive) -> f64 {
-    let Primitive {r, u, d: _, h} = primitive;
+    let Primitive { r, u, d: _, h } = primitive;
     let c = SPEED_OF_LIGHT;
     let gm = GAMMA_LAW_INDEX;
     let qh = (gm - 1.0) / gm;
@@ -140,7 +161,10 @@ fn du_dr(primitive: Primitive) -> f64 {
 fn jump_condition(e: f64, k: f64, l: f64) -> f64 {
     let gm = GAMMA_LAW_INDEX;
     let c = SPEED_OF_LIGHT;
-    (l * l - (c * c + e) * (c * c + gm * e) - k * (l * l - (c * c + gm * e).powi(2)).sqrt()) / c.powi(4)
+    let h = c * c + gm * e;
+    let lhs = l * l - (c * c + e) * h;
+    let rhs = k * (l * l - h * h).sqrt();
+    (lhs - rhs) / c.powi(4)
 }
 
 /// Solves for the primitive hydrodynamic state on the downstream side of a
@@ -177,25 +201,23 @@ fn solve_jump_condition(primitive: Primitive) -> Primitive {
 fn wind_inlet() -> Primitive {
     let c = SPEED_OF_LIGHT;
     let opts = Opts::parse();
-    let lum: f64 = opts.luminosity / 4.0 / PI;
-    let r: f64 = opts.r_inner;
-    let g: f64 = opts.gamma_launch;
-    let g_term: f64 = opts.gamma_terminal;
+    let edot = opts.luminosity / 4.0 / PI;
+    let r = opts.r_inner;
+    let g = opts.gamma_launch;
     let u = (g * g - 1.0).sqrt();
-    let h = g_term / g * c * c;
-    let mdot = lum / g / h;
+    let h = opts.gamma_terminal / g * c * c;
+    let mdot = edot / g / h;
     let d = mdot / r / r / u / c;
-    Primitive{r, u, d, h}
+    Primitive { r, u, d, h }
 }
 
-fn write_ascii_stdout<T: fmt::Display>(solution: &Vec<T>) {
+fn write_ascii_stdout<T: fmt::Display>(solution: &[T]) {
     for value in solution {
         println!("{}", value)
     }
 }
 
 fn main() {
-
     let opts = Opts::parse();
 
     let inlet_prim = wind_inlet();
