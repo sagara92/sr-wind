@@ -198,9 +198,8 @@ fn solve_jump_condition(primitive: Primitive) -> Primitive {
     Primitive::from_rufl(primitive.r, u, f, l)
 }
 
-fn wind_inlet() -> Primitive {
+fn wind_inlet(opts: &Opts) -> Primitive {
     let c = SPEED_OF_LIGHT;
-    let opts = Opts::parse();
     let edot = opts.luminosity / 4.0 / PI;
     let r = opts.r_inner;
     let g = opts.gamma_launch;
@@ -220,7 +219,7 @@ fn write_ascii_stdout<T: fmt::Display>(solution: &[T]) {
 fn main() {
     let opts = Opts::parse();
 
-    let inlet_prim = wind_inlet();
+    let inlet_prim = wind_inlet(&opts);
     let mut r = opts.r_inner;
     let mut u = opts.gamma_launch;
     let rshock = opts.r_shock;
