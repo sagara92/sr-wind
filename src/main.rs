@@ -24,17 +24,17 @@ const DELTA_LOG_RADIUS: f64 = 1e-4;
 #[clap(version = "0.1.0", author = "S. Adhikari and J. Zrake")]
 #[clap(setting = AppSettings::ColoredHelp)]
 struct Opts {
-    #[clap(long, about = "inner boundary (cm)", default_value = "1e8")]
+    #[clap(long, about = "inner boundary (cm)", default_value = "1e7")]
     pub r_inner: f64,
 
-    #[clap(long, about = "outer boundary (cm)", default_value = "1e11")]
+    #[clap(long, about = "outer boundary (cm)", default_value = "1e12")]
     pub r_outer: f64,
 
     #[clap(long, about = "shock position (cm)", default_value = "1e10")]
     pub r_shock: f64,
 
     #[clap(
-        short,
+        short = 'l',
         long,
         about = "wind kinetic luminosity (erg / s)",
         default_value = "1e33"
